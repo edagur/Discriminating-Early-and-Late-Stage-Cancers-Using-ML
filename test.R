@@ -59,16 +59,26 @@ auroc_matrix <- matrix(NA, nrow = fold_count, ncol = length(alpha_set), dimnames
 negative_allocation <- sample(rep(1:fold_count, ceiling(length(train_negative_indices) / fold_count)), length(train_negative_indices))
 positive_allocation <- sample(rep(1:fold_count, ceiling(length(train_positive_indices) / fold_count)), length(train_positive_indices))
 
+train_indices <- c(train_negative_indices, train_positive_indices)
+test_indices <- setdiff(1:length(y), train_indices)
+
+X_train <- X[train_indices,]
+X_test <- X[test_indices,]
+X_train <- scale(X_train)
+X_test <- (X_test - matrix(attr(X_train, "scaled:center"), nrow = nrow(X_test), ncol = ncol(X_test), byrow = TRUE)) / matrix(attr(X_train, "scaled:scale"), nrow = nrow(X_test), ncol = ncol(X_test), byrow = TRUE)
+X_train[is.na(X_train)] <- 0
+X_test[is.na(X_test)] <- 0
+invalid_indices <- which(apply(X_train, MARGIN = 2, sd) == 0)
+counts <- rep(0,length(weights))
+names(counts) <- colnames(X_train)
   for (replication in 1:replication_count) {
     load(file = sprintf("%s/%s/logistic_regression_%s_weights_%d_result.RData", result_path, cohort, "none", replication))
-    best_index <- which.max(weights)
-    weights_list[replication] <- best_index
+    
+    counts[order(weights, decreasing = TRUE)[1:250]] <- counts[order(weights, decreasing = TRUE)[1:250]] + 1
+    counts[order(weights, decreasing = FALSE)[1:250]] <- counts[order(weights, decreasing = FALSE)[1:250]] + 1
   }
-  indexes <- sort(table(weights_list),decreasing=TRUE)[1:5]
-  names <- as.data.frame(X)
-  i1 <- names[19312]  
-  i2 <- names[19303]
-  i3 <- names[19312]
-  i4 <- names[19313]
-  i5 <- names[19318]
+
+#picking the best 5 weights for this cancer type
+counts[order(counts, decreasing = TRUE)[1:5]]
+
   
